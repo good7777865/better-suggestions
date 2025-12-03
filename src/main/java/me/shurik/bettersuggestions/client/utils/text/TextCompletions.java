@@ -167,7 +167,7 @@ public class TextCompletions {
 
         if (KEYBIND_CACHE.isEmpty()) {
             for (KeyBinding allKeys : client.options.allKeys) {
-                KEYBIND_CACHE.add("\"" + allKeys.getTranslationKey() + "\"");
+                KEYBIND_CACHE.add("\"" + allKeys.getBoundKeyTranslationKey() + "\"");
             }
         }
         

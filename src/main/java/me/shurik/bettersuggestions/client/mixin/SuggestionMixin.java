@@ -90,7 +90,7 @@ public class SuggestionMixin implements CustomSuggestionAccessor {
                 if (ModConstants.CONFIG.entitySuggestions.showEntityPos) {
                     tooltip.add(Text.translatable("text.suggestion.tooltip.pos.layout",
                             StringUtils.formatTranslation("text.suggestion.tooltip.pos", Formatting.AQUA),
-                            StringUtils.formatPos(entity.getPos())
+                            StringUtils.formatPos(entity.getEntityPos())
                     ));
                 }
 

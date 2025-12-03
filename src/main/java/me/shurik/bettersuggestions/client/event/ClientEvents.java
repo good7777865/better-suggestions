@@ -6,7 +6,7 @@ import me.shurik.bettersuggestions.client.render.SpecialRendererQueue;
 import me.shurik.bettersuggestions.network.packet.ModPresenceBeaconPacket;
 import net.fabricmc.fabric.api.client.networking.v1.C2SPlayChannelEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 
 public class ClientEvents {
     public static void init() {
@@ -19,7 +19,7 @@ public class ClientEvents {
         });
 
         // Clear entity highlight information after rendering
-        WorldRenderEvents.LAST.register((worldrendercontext) -> {
+        WorldRenderEvents.AFTER_ENTITIES.register((worldrendercontext) -> {
             if (Client.INSTANCE.world != null) {
                 Client.INSTANCE.world.getEntities().forEach((entity) -> ((ClientEntityDataAccessor) entity).setHighlighted(false));
             }

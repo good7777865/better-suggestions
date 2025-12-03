@@ -8,11 +8,14 @@ import me.shurik.bettersuggestions.client.access.ClientEntityDataAccessor;
 import me.shurik.bettersuggestions.client.access.CustomSuggestionAccessor;
 import me.shurik.bettersuggestions.client.utils.ClientUtils;
 import me.shurik.bettersuggestions.utils.RegistryUtils;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ChatInputSuggestor;
 import net.minecraft.client.gui.screen.ChatInputSuggestor.SuggestionWindow;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.util.Window;
 import net.minecraft.client.util.math.Rect2i;
 import net.minecraft.entity.Entity;
 import net.minecraft.registry.Registries;
@@ -193,7 +196,9 @@ public class SuggestionWindowMixin {
 //        }
 
         // Render shift tooltip
-        if (suggestions$renderShiftTooltip && Screen.hasShiftDown()) {
+
+        // hasShiftDown() method got removed
+        if (suggestions$renderShiftTooltip && (ClientUtils.isKeyPressed(GLFW.GLFW_KEY_LEFT_SHIFT) || ClientUtils.isKeyPressed(GLFW.GLFW_KEY_RIGHT_SHIFT))) {
             List<Text> tooltip = customSuggestion.getMultilineTooltip();
             if (tooltip != null) {
                 //                                                                                                             get suggestion index in for loop
@@ -212,14 +217,14 @@ public class SuggestionWindowMixin {
 
     //public boolean keyPressed(int keyCode, int scanCode, int modifiers)
     @Inject(method = "keyPressed", at=@At("HEAD"), cancellable = true)
-    void keyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> info) {
-        if (keyCode == GLFW.GLFW_KEY_UP && modifiers == 2) {
+    void keyPressed(KeyInput input, CallbackInfoReturnable<Boolean> info) {
+        if (input.key() == GLFW.GLFW_KEY_UP && input.modifiers() == 2) {
             // Don't forget the minus sign | Wrap around                                      Don't overscroll
             this.scroll(-(this.selection == 0 ? 1 : (this.selection - CONFIG.maxSuggestionsShown < 0 ? this.selection : CONFIG.maxSuggestionsShown)));
             this.completed = false;
             info.setReturnValue(true);
         }
-        if (keyCode == GLFW.GLFW_KEY_DOWN && modifiers == 2) {
+        if (input.key() == GLFW.GLFW_KEY_DOWN && input.modifiers() == 2) {
             //                               Wrap around                                      Don't overscroll
             this.scroll(this.selection == this.suggestions.size() - 1 ? 1 : (this.selection + CONFIG.maxSuggestionsShown >= this.suggestions.size() ? this.suggestions.size() - this.selection - 1 : CONFIG.maxSuggestionsShown));
             this.completed = false;

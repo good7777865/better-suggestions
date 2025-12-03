@@ -4,7 +4,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import me.shurik.bettersuggestions.utils.ColorUtils;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;

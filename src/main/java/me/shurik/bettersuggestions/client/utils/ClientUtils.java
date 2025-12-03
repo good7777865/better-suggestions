@@ -27,7 +27,7 @@ public class ClientUtils {
 
     @Nullable
     public static Entity getEntityByUUID(String uuid) {
-        return getEntityByUUID(INSTANCE.world, UUID.fromString(uuid));
+        return getEntityByUUID(INSTANCE.world != null ? INSTANCE.world : null, UUID.fromString(uuid));
     }
 
     public static boolean entityExists(ClientWorld world, int id) {
@@ -35,7 +35,7 @@ public class ClientUtils {
     }
 
     public static boolean entityExists(int id) {
-        return entityExists(INSTANCE.world, id);
+        return entityExists(INSTANCE.world != null ? INSTANCE.world : null, id);
     }
 
     @Nullable
@@ -44,6 +44,6 @@ public class ClientUtils {
     }
 
     public static boolean isKeyPressed(int key) {
-        return InputUtil.isKeyPressed(INSTANCE.getWindow().getHandle(), key);
+        return InputUtil.isKeyPressed(INSTANCE.getWindow(), key);
     }
 }

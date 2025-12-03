@@ -3,7 +3,7 @@ package me.shurik.bettersuggestions.client.render;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
@@ -41,23 +41,23 @@ public class SpecialRenderer {
                     .build(false)
     );
 
-    private static VertexConsumer setupRendering(WorldRenderContext context, BlockPos pos) { return setupRendering(context, Vec3d.ofBottomCenter(pos)); }
-    private static VertexConsumer setupRendering(WorldRenderContext context, Entity entity) { return setupRendering(context, entity.getPos()); }
+    private static void setupRendering(WorldRenderContext context, BlockPos pos) { setupRendering(context, Vec3d.ofBottomCenter(pos)); }
+    private static VertexConsumer setupRendering(WorldRenderContext context, Entity entity) { return setupRendering(context, entity.getEntityPos()); }
     private static VertexConsumer setupRendering(WorldRenderContext context, Vec3d pos) {
-        Camera camera = context.camera();
+        Camera camera = context.gameRenderer().getCamera();
 
         double dx = pos.x - camera.getPos().x;
         double dy = pos.y - camera.getPos().y;
         double dz = pos.z - camera.getPos().z;
 
-        context.matrixStack().push();
-        context.matrixStack().translate(dx, dy, dz);
+        context.matrices().push();
+        context.matrices().translate(dx, dy, dz);
 
         return context.consumers().getBuffer(RENDER_LAYER);
     }
 
     private static void finishRendering(WorldRenderContext context) {
-        context.matrixStack().pop();
+        context.matrices().pop();
     }
 
     public static void renderEntityHighlight(Entity entity, Vector4f color, WorldRenderContext worldContext) {
@@ -71,7 +71,7 @@ public class SpecialRenderer {
     public static void renderBlockHighlight(BlockPos pos, Vector4f color, WorldRenderContext worldContext) {
         setupRendering(worldContext, pos);
 
-        VertexRendering.drawFilledBox(worldContext.matrixStack(), worldContext.consumers().getBuffer(RENDER_LAYER), -0.05d, 0d, -0.05d, 0.05d, 0.1d, 0.05d, color.x, color.y, color.z, color.w);
+        VertexRendering.drawFilledBox(worldContext.matrices(), worldContext.consumers().getBuffer(RENDER_LAYER), -0.05d, 0d, -0.05d, 0.05d, 0.1d, 0.05d, color.x, color.y, color.z, color.w);
 
         finishRendering(worldContext);
     }
@@ -79,8 +79,8 @@ public class SpecialRenderer {
     public static void renderPositionHighlight(Vec3d pos, Vector4f color, WorldRenderContext worldContext) {
         VertexConsumer consumer = setupRendering(worldContext, pos);
 
-        worldContext.matrixStack().translate(0F, -0.05F, 0F);
-        VertexRendering.drawFilledBox(worldContext.matrixStack(), consumer, -0.05d, 0d, -0.05d, 0.05d, 0.1d, 0.05d, color.x, color.y, color.z, color.w);
+        worldContext.matrices().translate(0F, -0.05F, 0F);
+        VertexRendering.drawFilledBox(worldContext.matrices(), consumer, -0.05d, 0d, -0.05d, 0.05d, 0.1d, 0.05d, color.x, color.y, color.z, color.w);
 
         finishRendering(worldContext);
     }
@@ -93,7 +93,7 @@ public class SpecialRenderer {
         double halfX = (box.maxX - box.minX) / 2;
         //                   getLengthZ
         double halfZ = (box.maxZ - box.minZ) / 2;
-        VertexRendering.drawFilledBox(worldContext.matrixStack(), consumer, -halfX, 0d, -halfZ, halfX, box.maxY - box.minY, halfZ, color.x, color.y, color.z, color.w);
+        VertexRendering.drawFilledBox(worldContext.matrices(), consumer, -halfX, 0d, -halfZ, halfX, box.maxY - box.minY, halfZ, color.x, color.y, color.z, color.w);
 
         finishRendering(worldContext);
     }
@@ -101,8 +101,8 @@ public class SpecialRenderer {
     public static void displayEntityHighlight(DisplayEntity interaction, Vector4f color, WorldRenderContext worldContext) {
         VertexConsumer consumer = setupRendering(worldContext, interaction);
 
-        worldContext.matrixStack().translate(0F, -0.2F, 0F);
-        VertexRendering.drawFilledBox(worldContext.matrixStack(), consumer, -0.2d, 0d, -0.2d, 0.2d, 0.4d, 0.2d, color.x, color.y, color.z, color.w);
+        worldContext.matrices().translate(0F, -0.2F, 0F);
+        VertexRendering.drawFilledBox(worldContext.matrices(), consumer, -0.2d, 0d, -0.2d, 0.2d, 0.4d, 0.2d, color.x, color.y, color.z, color.w);
 
         finishRendering(worldContext);
     }
@@ -118,19 +118,19 @@ public class SpecialRenderer {
     );
     public static void renderTracer(Entity entity, Vector4f color, WorldRenderContext worldContext) {
         // Get camera position (player's view)
-        Camera camera = worldContext.camera();
+        Camera camera = worldContext.gameRenderer().getCamera();
         Vec3d cameraPos = camera.getPos();
 
         // Get entity position (typically using the center or eye level)
-        Vec3d entityPos = entity.getPos().add(0, entity.getHeight() / 2, 0);
+        Vec3d entityPos = entity.getEntityPos().add(0, entity.getHeight() / 2, 0);
 
         // Setup rendering without translation since we'll specify absolute coordinates
-        worldContext.matrixStack().push();
+        worldContext.matrices().push();
         VertexConsumer consumer = worldContext.consumers().getBuffer(TRACER_LINE.apply(8d));
 
         // Draw a line from camera to entity (in world space)
         drawLine(
-                worldContext.matrixStack(),
+                worldContext.matrices(),
                 consumer,
                 0, 0, 0,  // Start at camera (local origin)
                 entityPos.x - cameraPos.x,
@@ -139,7 +139,7 @@ public class SpecialRenderer {
                 color.x, color.y, color.z, color.w
         );
 
-        worldContext.matrixStack().pop();
+        worldContext.matrices().pop();
     }
 
     public static void drawLine(MatrixStack matrices, VertexConsumer vertices,
