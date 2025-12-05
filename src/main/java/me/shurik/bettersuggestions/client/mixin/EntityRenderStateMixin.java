@@ -6,19 +6,23 @@ import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
+import java.lang.ref.WeakReference;
+
 @Mixin(EntityRenderState.class)
 public abstract class EntityRenderStateMixin implements EntityRenderStateAccessor {
 
+    // WeakReference to prevent memory leak
     @Unique
-    private Entity bettersuggestions$sourceEntity;
+    private WeakReference<Entity> bettersuggestions$sourceEntity;
 
     @Override
     public void bettersuggestions$setSourceEntity(Entity entity) {
-        this.bettersuggestions$sourceEntity = entity;
+        // Only store reference for highlighted entities to minimize overhead
+        this.bettersuggestions$sourceEntity = entity != null ? new WeakReference<>(entity) : null;
     }
 
     @Override
     public Entity bettersuggestions$getSourceEntity() {
-        return this.bettersuggestions$sourceEntity;
+        return this.bettersuggestions$sourceEntity != null ? this.bettersuggestions$sourceEntity.get() : null;
     }
 }

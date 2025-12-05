@@ -44,7 +44,8 @@ public abstract class EntityRenderManagerMixin {
     @Inject(method = "getAndUpdateRenderState", at = @At("RETURN"))
     private <E extends Entity> void storeEntityInState(E entity, float tickDelta, CallbackInfoReturnable<EntityRenderState> cir) {
         EntityRenderState state = cir.getReturnValue();
-        if (state instanceof EntityRenderStateAccessor accessor) {
+        // Early exit if entity is not highlighted to minimize overhead
+        if (state instanceof EntityRenderStateAccessor accessor && entity instanceof ClientEntityDataAccessor clientAccessor && clientAccessor.isHighlighted()) {
             accessor.bettersuggestions$setSourceEntity(entity);
         }
     }
@@ -65,17 +66,20 @@ public abstract class EntityRenderManagerMixin {
 
         Entity entity = accessor.bettersuggestions$getSourceEntity();
 
-        if (entity != null && ((ClientEntityDataAccessor)entity).isHighlighted()) {
-            switch (entity) {
-                case MarkerEntity markerEntity -> suggestions$renderItem(Items.STRUCTURE_VOID.getDefaultStack(), matrices, orderedRenderCommandQueue, entity, d, e, f);
-                case AreaEffectCloudEntity areaEffectCloudEntity -> suggestions$renderItem(Items.LINGERING_POTION.getDefaultStack(), matrices, orderedRenderCommandQueue, entity, d, e, f);
-                case DisplayEntity displayEntity -> SpecialRendererQueue.addEntity(entity);
-                case InteractionEntity interactionEntity -> SpecialRendererQueue.addEntity(entity);
-                // In case the proper renderer is broken:
-                // case InteractionEntity interaction -> suggestions$renderItem(Items.PISTON.getDefaultStack(), matrices, orderedRenderCommandQueue, entity, d, e, f);
-                // case DisplayEntity display -> suggestions$renderItem(Items.ITEM_FRAME.getDefaultStack(), matrices, orderedRenderCommandQueue, entity, d, e, f);
-                default -> {}
-            }
+        // Early exit if entity reference is null (WeakReference was garbage collected)
+        if (entity==null) {
+            return;
+        }
+
+        switch (entity) {
+            case MarkerEntity markerEntity -> suggestions$renderItem(Items.STRUCTURE_VOID.getDefaultStack(), matrices, orderedRenderCommandQueue, entity, d, e, f);
+            case AreaEffectCloudEntity areaEffectCloudEntity -> suggestions$renderItem(Items.LINGERING_POTION.getDefaultStack(), matrices, orderedRenderCommandQueue, entity, d, e, f);
+            case DisplayEntity displayEntity -> SpecialRendererQueue.addEntity(entity);
+            case InteractionEntity interactionEntity -> SpecialRendererQueue.addEntity(entity);
+            // In case the proper renderer is broken:
+            // case InteractionEntity interaction -> suggestions$renderItem(Items.PISTON.getDefaultStack(), matrices, orderedRenderCommandQueue, entity, d, e, f);
+            // case DisplayEntity display -> suggestions$renderItem(Items.ITEM_FRAME.getDefaultStack(), matrices, orderedRenderCommandQueue, entity, d, e, f);
+            default -> {}
         }
     }
 
