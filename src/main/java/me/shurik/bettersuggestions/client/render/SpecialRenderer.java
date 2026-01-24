@@ -1,59 +1,34 @@
 package me.shurik.bettersuggestions.client.render;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.DepthTestFunction;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
-import net.minecraft.client.gl.RenderPipelines;
-import net.minecraft.client.render.*;
+import net.minecraft.client.render.Camera;
+import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.RenderLayers;
+import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.DisplayEntity;
 import net.minecraft.entity.decoration.InteractionEntity;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Matrix4f;
+//import org.joml.Quaternionf;
+//import org.joml.Vector3f;
 import org.joml.Vector4f;
 
-import java.util.OptionalDouble;
-import java.util.function.Function;
-
-import static net.minecraft.client.render.RenderPhase.NO_LAYERING;
-
 public class SpecialRenderer {
-    public static final RenderPipeline RENDER_PIPELINE = RenderPipelines.register(
-            RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
-                    .withLocation("pipeline/debug_filled_box")
-                    .withCull(false)
-                    .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
-                    .withVertexFormat(VertexFormats.POSITION_COLOR, VertexFormat.DrawMode.TRIANGLE_STRIP)
-                    .build()
-    );
-    private static final RenderLayer.MultiPhase RENDER_LAYER = RenderLayer.of(
-            "better_suggestions_highlight",
-            1536,
-            false,
-            true,
-            RENDER_PIPELINE,
-            RenderLayer.MultiPhaseParameters.builder()
-                    .layering(NO_LAYERING)
-                    .build(false)
-    );
 
-    private static void setupRendering(WorldRenderContext context, BlockPos pos) { setupRendering(context, Vec3d.ofBottomCenter(pos)); }
-    private static VertexConsumer setupRendering(WorldRenderContext context, Entity entity) { return setupRendering(context, entity.getEntityPos()); }
-    private static VertexConsumer setupRendering(WorldRenderContext context, Vec3d pos) {
+    private static void setupRendering(WorldRenderContext context, Vec3d pos) {
+        //noinspection resource
         Camera camera = context.gameRenderer().getCamera();
 
-        double dx = pos.x - camera.getPos().x;
-        double dy = pos.y - camera.getPos().y;
-        double dz = pos.z - camera.getPos().z;
+        double dx = pos.x - camera.getCameraPos().x;
+        double dy = pos.y - camera.getCameraPos().y;
+        double dz = pos.z - camera.getCameraPos().z;
 
         context.matrices().push();
         context.matrices().translate(dx, dy, dz);
-
-        return context.consumers().getBuffer(RENDER_LAYER);
     }
 
     private static void finishRendering(WorldRenderContext context) {
@@ -69,121 +44,137 @@ public class SpecialRenderer {
     }
 
     public static void renderBlockHighlight(BlockPos pos, Vector4f color, WorldRenderContext worldContext) {
-        setupRendering(worldContext, pos);
+        setupRendering(worldContext, Vec3d.ofBottomCenter(pos));
 
-        VertexRendering.drawFilledBox(worldContext.matrices(), worldContext.consumers().getBuffer(RENDER_LAYER), -0.05d, 0d, -0.05d, 0.05d, 0.1d, 0.05d, color.x, color.y, color.z, color.w);
+        VertexConsumer buffer = worldContext.consumers().getBuffer(RenderLayers.textBackgroundSeeThrough());
+
+        drawFilledBox(worldContext.matrices(), buffer, -0.05d, 0d, -0.05d, 0.05d, 0.1d, 0.05d, color.x, color.y, color.z, color.w);
 
         finishRendering(worldContext);
     }
 
     public static void renderPositionHighlight(Vec3d pos, Vector4f color, WorldRenderContext worldContext) {
-        VertexConsumer consumer = setupRendering(worldContext, pos);
-
+        setupRendering(worldContext, pos);
         worldContext.matrices().translate(0F, -0.05F, 0F);
-        VertexRendering.drawFilledBox(worldContext.matrices(), consumer, -0.05d, 0d, -0.05d, 0.05d, 0.1d, 0.05d, color.x, color.y, color.z, color.w);
+
+        VertexConsumer buffer = worldContext.consumers().getBuffer(RenderLayers.textBackgroundSeeThrough());
+
+        drawFilledBox(worldContext.matrices(), buffer, -0.05d, 0d, -0.05d, 0.05d, 0.1d, 0.05d, color.x, color.y, color.z, color.w);
 
         finishRendering(worldContext);
     }
 
     public static void interactionHighlight(InteractionEntity interaction, Vector4f color, WorldRenderContext worldContext) {
-        VertexConsumer consumer = setupRendering(worldContext, interaction);
+        setupRendering(worldContext, interaction.getEntityPos());
         Box box = interaction.getBoundingBox();
 
         //                   getLengthX
         double halfX = (box.maxX - box.minX) / 2;
         //                   getLengthZ
         double halfZ = (box.maxZ - box.minZ) / 2;
-        VertexRendering.drawFilledBox(worldContext.matrices(), consumer, -halfX, 0d, -halfZ, halfX, box.maxY - box.minY, halfZ, color.x, color.y, color.z, color.w);
+
+        VertexConsumer buffer = worldContext.consumers().getBuffer(RenderLayers.textBackgroundSeeThrough());
+
+        drawFilledBox(worldContext.matrices(), buffer, -halfX, 0d, -halfZ, halfX, box.maxY - box.minY, halfZ, color.x, color.y, color.z, color.w);
 
         finishRendering(worldContext);
     }
 
     public static void displayEntityHighlight(DisplayEntity interaction, Vector4f color, WorldRenderContext worldContext) {
-        VertexConsumer consumer = setupRendering(worldContext, interaction);
-
+        setupRendering(worldContext, interaction.getEntityPos());
         worldContext.matrices().translate(0F, -0.2F, 0F);
-        VertexRendering.drawFilledBox(worldContext.matrices(), consumer, -0.2d, 0d, -0.2d, 0.2d, 0.4d, 0.2d, color.x, color.y, color.z, color.w);
+
+        VertexConsumer buffer = worldContext.consumers().getBuffer(RenderLayers.textBackgroundSeeThrough());
+
+        drawFilledBox(worldContext.matrices(), buffer, -0.2d, 0d, -0.2d, 0.2d, 0.4d, 0.2d, color.x, color.y, color.z, color.w);
 
         finishRendering(worldContext);
     }
 
-    public static final RenderPipeline TRACER_PIPELINE = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.RENDERTYPE_LINES_SNIPPET).withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST).withCull(false).withLocation("pipeline/lines").build());
-    private static final Function<Double, RenderLayer.MultiPhase> TRACER_LINE = Util.memoize(
-            double_ -> RenderLayer.of(
-                    "better_suggestions_highlight",
-                    1536,
-                    TRACER_PIPELINE,
-                    RenderLayer.MultiPhaseParameters.builder().lineWidth(new RenderPhase.LineWidth(OptionalDouble.of(double_))).build(false)
-            )
-    );
-    public static void renderTracer(Entity entity, Vector4f color, WorldRenderContext worldContext) {
-        // Get camera position (player's view)
-        Camera camera = worldContext.gameRenderer().getCamera();
-        Vec3d cameraPos = camera.getPos();
+    private static void drawFilledBox(MatrixStack matrices, VertexConsumer vertices,
+                                      double minX, double minY, double minZ,
+                                      double maxX, double maxY, double maxZ,
+                                      float red, float green, float blue, float alpha) {
+        Matrix4f positionMatrix = matrices.peek().getPositionMatrix();
 
-        // Get entity position (typically using the center or eye level)
-        Vec3d entityPos = entity.getEntityPos().add(0, entity.getHeight() / 2, 0);
+        int light = LightmapTextureManager.MAX_LIGHT_COORDINATE; // 0xF000F0
 
-        // Setup rendering without translation since we'll specify absolute coordinates
-        worldContext.matrices().push();
-        VertexConsumer consumer = worldContext.consumers().getBuffer(TRACER_LINE.apply(8d));
+        // Front Face (Z+)
+        vertices.vertex(positionMatrix, (float) minX, (float) minY, (float) maxZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) maxX, (float) minY, (float) maxZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) maxX, (float) maxY, (float) maxZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) minX, (float) maxY, (float) maxZ).color(red, green, blue, alpha).light(light);
 
-        // Draw a line from camera to entity (in world space)
-        drawLine(
-                worldContext.matrices(),
-                consumer,
-                0, 0, 0,  // Start at camera (local origin)
-                entityPos.x - cameraPos.x,
-                entityPos.y - cameraPos.y,
-                entityPos.z - cameraPos.z,  // End at entity (relative to camera)
-                color.x, color.y, color.z, color.w
-        );
+        // Back face (Z-)
+        vertices.vertex(positionMatrix, (float) maxX, (float) minY, (float) minZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) minX, (float) minY, (float) minZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) minX, (float) maxY, (float) minZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) maxX, (float) maxY, (float) minZ).color(red, green, blue, alpha).light(light);
 
-        worldContext.matrices().pop();
+        // Left face (X-)
+        vertices.vertex(positionMatrix, (float) minX, (float) minY, (float) minZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) minX, (float) minY, (float) maxZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) minX, (float) maxY, (float) maxZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) minX, (float) maxY, (float) minZ).color(red, green, blue, alpha).light(light);
+
+        // Right face (X+)
+        vertices.vertex(positionMatrix, (float) maxX, (float) minY, (float) maxZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) maxX, (float) minY, (float) minZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) maxX, (float) maxY, (float) minZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) maxX, (float) maxY, (float) maxZ).color(red, green, blue, alpha).light(light);
+
+        // Top face (Y+)
+        vertices.vertex(positionMatrix, (float) minX, (float) maxY, (float) maxZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) maxX, (float) maxY, (float) maxZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) maxX, (float) maxY, (float) minZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) minX, (float) maxY, (float) minZ).color(red, green, blue, alpha).light(light);
+
+        // Bottom face (Y-)
+        vertices.vertex(positionMatrix, (float) minX, (float) minY, (float) minZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) maxX, (float) minY, (float) minZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) maxX, (float) minY, (float) maxZ).color(red, green, blue, alpha).light(light);
+        vertices.vertex(positionMatrix, (float) minX, (float) minY, (float) maxZ).color(red, green, blue, alpha).light(light);
     }
 
-    public static void drawLine(MatrixStack matrices, VertexConsumer vertices,
-                                double startX, double startY, double startZ,
-                                double endX, double endY, double endZ,
-                                float r, float gr, float b, float a) {
-        MatrixStack.Entry matrixEntry = matrices.peek();
-
-        // Test
-//        VertexRendering.drawBox(matrices, vertices, startX, startY, startZ, endX, endY, endZ, r, g, b, a);
-
-        float sX = (float)startX;
-        float sY = (float)startY;
-        float sZ = (float)startZ;
-        float eX = (float)endX;
-        float eY = (float)endY;
-        float eZ = (float)endZ;
-
-        // Draw a line from start to end
-//        vertices.vertex(matrixEntry, eX, eY, eZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 1.0F, 0.0F);
-//        vertices.vertex(matrixEntry, sX, sY, sZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 1.0F, 0.0F);
-//        vertices.vertex(matrixEntry, sX, sY, sZ).color(r, gr, b, a).normal(matrixEntry, 1.0F, 0.0F, 0.0F);
-//        vertices.vertex(matrixEntry, eX, sY, sZ).color(r, gr, b, a).normal(matrixEntry, 1.0F, 0.0F, 0.0F);
-//        vertices.vertex(matrixEntry, sX, sY, sZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 1.0F, 0.0F);
-//        vertices.vertex(matrixEntry, sX, eY, sZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 1.0F, 0.0F);
-//        vertices.vertex(matrixEntry, sX, sY, sZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 0.0F, 1.0F);
-//        vertices.vertex(matrixEntry, sX, sY, eZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 0.0F, 1.0F);
-//        vertices.vertex(matrixEntry, eX, sY, sZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 1.0F, 0.0F);
-//        vertices.vertex(matrixEntry, eX, eY, sZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 1.0F, 0.0F);
-//        vertices.vertex(matrixEntry, eX, eY, sZ).color(r, gr, b, a).normal(matrixEntry, -1.0F, 0.0F, 0.0F);
-//        vertices.vertex(matrixEntry, sX, eY, sZ).color(r, gr, b, a).normal(matrixEntry, -1.0F, 0.0F, 0.0F);
-//        vertices.vertex(matrixEntry, sX, eY, sZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 0.0F, 1.0F);
-//        vertices.vertex(matrixEntry, sX, eY, eZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 0.0F, 1.0F);
-//        vertices.vertex(matrixEntry, sX, eY, eZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, -1.0F, 0.0F);
-//        vertices.vertex(matrixEntry, sX, sY, eZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, -1.0F, 0.0F);
-//        vertices.vertex(matrixEntry, sX, sY, eZ).color(r, gr, b, a).normal(matrixEntry, 1.0F, 0.0F, 0.0F);
-//        vertices.vertex(matrixEntry, eX, sY, eZ).color(r, gr, b, a).normal(matrixEntry, 1.0F, 0.0F, 0.0F);
-//        vertices.vertex(matrixEntry, eX, sY, eZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 0.0F, -1.0F);
-//        vertices.vertex(matrixEntry, eX, sY, sZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 0.0F, -1.0F);
-//        vertices.vertex(matrixEntry, sX, eY, eZ).color(r, gr, b, a).normal(matrixEntry, 1.0F, 0.0F, 0.0F);
-//        vertices.vertex(matrixEntry, eX, eY, eZ).color(r, gr, b, a).normal(matrixEntry, 1.0F, 0.0F, 0.0F);
-//        vertices.vertex(matrixEntry, eX, sY, eZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 1.0F, 0.0F);
-//        vertices.vertex(matrixEntry, eX, eY, eZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 1.0F, 0.0F);
-//        vertices.vertex(matrixEntry, eX, eY, sZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 0.0F, 1.0F);
-//        vertices.vertex(matrixEntry, eX, eY, eZ).color(r, gr, b, a).normal(matrixEntry, 0.0F, 0.0F, 1.0F);
-    }
+//    public static void renderTracer(Entity entity, Vector4f color, WorldRenderContext worldContext) {
+//        // Get camera position (player's view)
+//        //noinspection resource
+//        Camera camera = worldContext.gameRenderer().getCamera();
+//
+//        // Get entity eye position
+//        Vec3d cameraPos = camera.getCameraPos();
+//        Vec3d entityPos = entity.getEyePos();
+//
+//        // Calculate vector from camera to entity
+//        Vec3d diff = entityPos.subtract(cameraPos);
+//        float length = (float) diff.length();
+//
+//        // Setup rendering without translation since we'll specify absolute coordinates
+//        worldContext.matrices().push();
+//
+//        // Calculate rotation: We rotate the Z-axis (0,0,1) to point towards the entity
+//        // This allows us to draw a straight box along the Z-axis
+//        Vector3f startDir = new Vector3f(0, 0, 1);
+//        Vector3f targetDir = new Vector3f((float) diff.x, (float) diff.y, (float) diff.z).normalize();
+//        Quaternionf rotation = new Quaternionf().rotationTo(startDir, targetDir);
+//        worldContext.matrices().multiply(rotation);
+//
+//        // Using textBackgroundSeeThrough because it ignores depth test (sees through walls)
+//        // Since RenderLayers.lines() has depth test enabled, we simulate a line using a thin box
+//        VertexConsumer buffer = worldContext.consumers().getBuffer(RenderLayers.textBackgroundSeeThrough());
+//
+//        float width = 0.02f;
+//        float startOffset = 0.5f;
+//
+//        // Draw the beam from the camera (0,0,0) to the target distance (length) along Z-axis
+//        drawFilledBox(
+//                worldContext.matrices(),
+//                buffer,
+//                -width, -width, startOffset,
+//                width, width, length,
+//                color.x, color.y, color.z, color.w
+//        );
+//
+//        worldContext.matrices().pop();
+//    }
 }

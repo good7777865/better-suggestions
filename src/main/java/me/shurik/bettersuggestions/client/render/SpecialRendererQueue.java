@@ -63,6 +63,7 @@ public class SpecialRendererQueue {
         }
         for (EntityEntry entry : ENTITIES) {
             SpecialRenderer.renderEntityHighlight(entry.entity, entry.color, worldContext);
+        //  SpecialRenderer.renderTracer(entry.entity, entry.color, worldContext);
         }
 
         clearQueue();

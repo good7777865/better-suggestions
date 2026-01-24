@@ -8,8 +8,10 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.network.ServerPlayerEntity;
 
+import static net.minecraft.command.DefaultPermissions.MODERATORS;
+
 public class ServerPacketHandler {
-    private static boolean hasPermissions(ServerPlayerEntity player) { return !ModConstants.CONFIG.server.requireOpToRequestData || player.hasPermissionLevel(1); }
+    private static boolean hasPermissions(ServerPlayerEntity player) { return !ModConstants.CONFIG.server.requireOpToRequestData || player.getPermissions().hasPermission(MODERATORS); }
     public static void init() {
         // One of the registrations is likely unnecessary
         PayloadTypeRegistry.playS2C().register(ModPresenceBeaconPacket.ID, ModPresenceBeaconPacket.CODEC);
