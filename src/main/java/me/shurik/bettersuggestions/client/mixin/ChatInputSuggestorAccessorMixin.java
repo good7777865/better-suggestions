@@ -1,27 +1,19 @@
 package me.shurik.bettersuggestions.client.mixin;
 
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.components.CommandSuggestions;
+import net.minecraft.client.gui.components.EditBox;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.ChatInputSuggestor;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-
 /**
- * Accessor for ChatInputSuggestor
+ * Accessor for CommandSuggestions
  */
-@Mixin(ChatInputSuggestor.class)
+@Mixin(CommandSuggestions.class)
 public interface ChatInputSuggestorAccessorMixin {
-    @Accessor
-    Screen getOwner();
+    @Accessor("input")
+    EditBox getTextField();
 
     @Accessor
-    TextFieldWidget getTextField();
-
-    @Accessor
-    void setMaxSuggestionSize(int maxSuggestionSize);
-
-    @Accessor
-    TextRenderer getTextRenderer();
+    Font getFont();
 }

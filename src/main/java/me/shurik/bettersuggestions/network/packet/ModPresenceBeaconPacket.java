@@ -1,16 +1,22 @@
 package me.shurik.bettersuggestions.network.packet;
 
 import me.shurik.bettersuggestions.BetterSuggestionsMod;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public class ModPresenceBeaconPacket implements CustomPayload {
-    public static final PacketCodec<PacketByteBuf, ModPresenceBeaconPacket> CODEC = PacketCodec.unit(new ModPresenceBeaconPacket());
-    public static final Id<ModPresenceBeaconPacket> ID = new Id<>(BetterSuggestionsMod.id("mod_presence_beacon"));
+public class ModPresenceBeaconPacket implements CustomPacketPayload {
+    // Singleton — StreamCodec.unit encodes by reference-equality against this exact instance,
+    // so every send site must reuse INSTANCE (a fresh `new ModPresenceBeaconPacket()` triggers
+    // IllegalStateException "Can't encode ... expected ...").
+    public static final ModPresenceBeaconPacket INSTANCE = new ModPresenceBeaconPacket();
+    public static final StreamCodec<RegistryFriendlyByteBuf, ModPresenceBeaconPacket> CODEC = StreamCodec.unit(INSTANCE);
+    public static final Type<ModPresenceBeaconPacket> ID = new Type<>(BetterSuggestionsMod.id("mod_presence_beacon"));
+
+    private ModPresenceBeaconPacket() {}
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

@@ -7,7 +7,7 @@ import me.shurik.bettersuggestions.client.data.ClientDataGetter;
 import me.shurik.bettersuggestions.network.packet.EntityCommandTagsResponseS2CPacket;
 import me.shurik.bettersuggestions.network.packet.EntityScoresResponseS2CPacket;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 import java.util.Objects;
 
@@ -22,7 +22,7 @@ public class ClientPacketHandler {
         // Remove from pending requests
         ClientDataGetter.pendingTagRequests.remove(entityId);
         // Get entity
-        Entity entity = Objects.requireNonNull(context.client().world).getEntityById(entityId);
+        Entity entity = Objects.requireNonNull(context.client().level).getEntity(entityId);
         if (entity == null) {
             if (ModConstants.DEBUG) {
                 Client.LOGGER.warn("Received tag list for an unknown entity with ID {}", entityId);
@@ -38,7 +38,7 @@ public class ClientPacketHandler {
         // Remove from pending requests
         ClientDataGetter.pendingScoreRequests.remove(entityId);
         // Get entity
-        Entity entity = Objects.requireNonNull(context.client().world).getEntityById(entityId);
+        Entity entity = Objects.requireNonNull(context.client().level).getEntity(entityId);
         if (entity == null) {
             if (ModConstants.DEBUG) {
                 Client.LOGGER.warn("Received score list for an unknown entity with ID {}", entityId);

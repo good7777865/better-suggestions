@@ -3,18 +3,18 @@ package me.shurik.bettersuggestions.client.utils.text;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
 import me.shurik.bettersuggestions.ModConstants;
-import me.shurik.bettersuggestions.client.mixin.TranslationStorageAccessorMixin;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.resource.language.TranslationStorage;
-import net.minecraft.util.Language;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.KeyMapping;
+
+import net.minecraft.locale.Language;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class TextCompletions {
@@ -149,12 +149,19 @@ public class TextCompletions {
                     vanillaLang.setAccessible(true);
                     language = (Language) vanillaLang.get(language);
                 } catch (NoSuchFieldException | IllegalAccessException e) {
-                    throw new RuntimeException("Failed to retrieve TranslationStorage. Expected: " + TranslationStorage.class.getCanonicalName() + ", got: " + language.getClass().getCanonicalName());
+                    throw new RuntimeException("Failed to retrieve TranslationStorage. Expected: " + "TranslationStorage" + ", got: " + language.getClass().getCanonicalName());
                 }
             }
 
-            Set<String> keys = ((TranslationStorageAccessorMixin) language).getTranslations().keySet();
-            keys.forEach((key) -> TRANSLATION_CACHE.add("\"" + key + "\""));
+            try {
+                Field storageField = language.getClass().getDeclaredField("val$storage");
+                storageField.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                Map<String, String> storage = (Map<String, String>) storageField.get(language);
+                storage.keySet().forEach((key) -> TRANSLATION_CACHE.add("\"" + key + "\""));
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                throw new RuntimeException("Failed to retrieve translation storage from " + language.getClass().getCanonicalName(), e);
+            }
         }
 
         return matchingCompletions(input, TRANSLATION_CACHE);
@@ -162,12 +169,12 @@ public class TextCompletions {
 
     public static final List<String> KEYBIND_CACHE = Lists.newArrayList();
     public static List<TextCompletion> keybindCompletions(String input) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) return Lists.newArrayList();
 
         if (KEYBIND_CACHE.isEmpty()) {
-            for (KeyBinding allKeys : client.options.allKeys) {
-                KEYBIND_CACHE.add("\"" + allKeys.getBoundKeyTranslationKey() + "\"");
+            for (KeyMapping allKeys : client.options.keyMappings) {
+                KEYBIND_CACHE.add("\"" + allKeys.getName() + "\"");
             }
         }
         
@@ -178,13 +185,13 @@ public class TextCompletions {
         if (!input.endsWith("\""))
             return Lists.newArrayList(completions("\""));
 
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (client == null) return Lists.newArrayList();
 
         input = input.substring(0, input.length() - 1);
 
-        if (client.crosshairTarget != null && client.crosshairTarget.getType() == HitResult.Type.BLOCK) {
-            BlockHitResult blockHitResult = (BlockHitResult) client.crosshairTarget;
+        if (client.hitResult != null && client.hitResult.getType() == HitResult.Type.BLOCK) {
+            BlockHitResult blockHitResult = (BlockHitResult) client.hitResult;
             BlockPos pos = blockHitResult.getBlockPos();
             
             return Lists.newArrayList(matchingCompletions(input, "\"" + pos.getX(), "\"" + pos.getX() + " " + pos.getY(), "\"" + pos.getX() + " " + pos.getY() + " " + pos.getZ()));

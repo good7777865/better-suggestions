@@ -6,8 +6,8 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import me.shurik.bettersuggestions.client.suggestion.SwizzleArgumentTypeSuggestions;
 import me.shurik.bettersuggestions.client.suggestion.UuidArgumentSuggestions;
-import net.minecraft.command.argument.SwizzleArgumentType;
-import net.minecraft.command.argument.UuidArgumentType;
+import net.minecraft.commands.arguments.UuidArgument;
+import net.minecraft.commands.arguments.coordinates.SwizzleArgument;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -30,9 +30,9 @@ public interface ArgumentTypeMixin {
 //            case TextArgumentType textArgument ->
 //                    info.setReturnValue(TextArgumentSuggestions.listSuggestions(context, builder));
             // Suggest random UUID (attribute modifier)
-            case UuidArgumentType uuidArgument ->
+            case UuidArgument uuidArgument ->
                     info.setReturnValue(UuidArgumentSuggestions.listSuggestions(context, builder));
-            case SwizzleArgumentType swizzleArgument ->
+            case SwizzleArgument swizzleArgument ->
                     info.setReturnValue(SwizzleArgumentTypeSuggestions.listSuggestions(context, builder));
             default -> {
             }

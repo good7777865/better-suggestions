@@ -1,6 +1,6 @@
 
 plugins {
-	id("fabric-loom") version "1.15-SNAPSHOT" // Fabric Loom
+	id("net.fabricmc.fabric-loom") version "1.16-SNAPSHOT" // Fabric Loom
 	id("io.github.p03w.machete") version "2.0.1" // Build jar compression
 	id("me.modmuss50.mod-publish-plugin") version "1.1.0" // Mod publishing
 
@@ -34,10 +34,13 @@ version = modVersion
 base {
 	archivesName = "$modId-$minecraftVersion"
 }
-
 repositories {
 	maven("https://maven.shedaniel.me/")
 	maven("https://maven.terraformersmc.com/releases/")
+	maven("https://api.modrinth.com/maven") {
+		name = "Modrinth"
+		content { includeGroup("maven.modrinth") }
+	}
 }
 
 loom {
@@ -48,38 +51,20 @@ loom {
 
 dependencies {
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
-	// There should be an error if both Yarn and Parchment mappings are specified
-	if (project.findProperty("mod.yarn") != null) {
-		mappings("net.fabricmc:yarn:${property("mod.yarn")}:v2")
-	} else if (project.findProperty("mod.parchment") != null) {
-		val parchmentVersion = property("mod.parchment")
-		@Suppress("UnstableApiUsage")
-		mappings(loom.layered {
-			officialMojangMappings()
-			if (parchmentVersion.contains(":"))
-				parchment("org.parchmentmc.data:parchment-${parchmentVersion}@zip") // Use exact version
-			else
-				parchment("org.parchmentmc.data:parchment-${minecraftVersion}:${parchmentVersion}@zip") // Use minecraft version + given date
-		})
-	} else {
-		mappings(loom.officialMojangMappings())
-	}
-
-	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
-
+	implementation("net.fabricmc:fabric-loader:${loaderVersion}")
 	// Fabric API
-	modImplementation(fabricApiModule("fabric-api-base"))
-	modImplementation(fabricApiModule("fabric-networking-api-v1"))
-	modImplementation(fabricApiModule("fabric-rendering-v1"))
+	implementation(fabricApiModule("fabric-api-base"))
+	implementation(fabricApiModule("fabric-networking-api-v1"))
+	implementation(fabricApiModule("fabric-rendering-v1"))
 
 	// Other mods might need different modules
-	// modRuntimeOnly(fabricApiModule("fabric-api"))
-	modRuntimeOnly("net.fabricmc.fabric-api:fabric-api:${property("deps.fabricApi")}")
+	// runtimeOnly(fabricApiModule("fabric-api"))
+	runtimeOnly("net.fabricmc.fabric-api:fabric-api:${property("deps.fabricApi")}")
 
-	modApi("com.terraformersmc:modmenu:${property("deps.modMenu")}")
+	api("com.terraformersmc:modmenu:${property("deps.modMenu")}")
 
-	modApi("me.shedaniel.cloth:cloth-config-fabric:${property("deps.clothConfig")}") {
-		exclude("net.fabricmc.fabric-api")
+	api("maven.modrinth:cloth-config:${property("deps.clothConfig")}") {
+		exclude(group = "net.fabricmc.fabric-api")
 	}
 }
 
@@ -119,7 +104,7 @@ tasks {
 	}
 
 	publishMods {
-		file = remapJar.get().archiveFile
+		file = jar.get().archiveFile
 		changelog = providers.environmentVariable("CHANGELOG").getOrElse("No changelog provided")
 		type = BETA
 		displayName = "$modName $minecraftVersion $modVersion"
@@ -168,7 +153,7 @@ tasks {
 
 	configureEach {
 		if (name.startsWith("publish") || name == "generateMetadataFileForJarPublication") {
-			dependsOn("optimizeOutputsOfRemapJar")
+			dependsOn("optimizeOutputsOfJar")
 		}
 	}
 }

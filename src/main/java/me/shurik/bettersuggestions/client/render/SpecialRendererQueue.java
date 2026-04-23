@@ -4,11 +4,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import me.shurik.bettersuggestions.utils.ColorUtils;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector4f;
 
@@ -19,13 +19,18 @@ import java.util.Map;
 public class SpecialRendererQueue {
     private interface Entry {}
     public record BlockEntry(BlockPos pos, Vector4f color) implements Entry {}
-    public record PositionEntry(Vec3d pos, Vector4f color) implements Entry {}
+    public record PositionEntry(Vec3 pos, Vector4f color) implements Entry {}
     public record EntityEntry(Entity entity, Vector4f color) implements Entry {}
     public static final Queue<BlockEntry> BLOCKS = new Queue<>();
     public static final Queue<PositionEntry> POSITIONS = new Queue<>();
     public static final Queue<EntityEntry> ENTITIES = new Queue<>();
 
-    private static final Vector4f[] COLORS = new Vector4f[] { ColorUtils.getColor(Formatting.RED.getColorValue(), 0.3f), ColorUtils.getColor(Formatting.GREEN.getColorValue(), 0.3f), ColorUtils.getColor(Formatting.YELLOW.getColorValue(), 0.3f), ColorUtils.getColor(Formatting.LIGHT_PURPLE.getColorValue(), 0.3f) };
+    private static final Vector4f[] COLORS = new Vector4f[] {
+        ColorUtils.getColor(ChatFormatting.RED.getColor(), 0.3f),
+        ColorUtils.getColor(ChatFormatting.GREEN.getColor(), 0.3f),
+        ColorUtils.getColor(ChatFormatting.YELLOW.getColor(), 0.3f),
+        ColorUtils.getColor(ChatFormatting.LIGHT_PURPLE.getColor(), 0.3f)
+    };
     public static Vector4f getColorForIndex(int index) {
         return COLORS[index % COLORS.length];
     }
@@ -34,7 +39,7 @@ public class SpecialRendererQueue {
         BLOCKS.add(new BlockEntry(pos, getColorForIndex(BLOCKS.size())));
     }
 
-    public static void addPosition(Vec3d pos) {
+    public static void addPosition(Vec3 pos) {
         POSITIONS.add(new PositionEntry(pos, getColorForIndex(POSITIONS.size())));
     }
 
@@ -54,15 +59,20 @@ public class SpecialRendererQueue {
         ENTITIES.clearAll();
     }
 
-    public static void processQueue(WorldRenderContext worldContext) {
+    public static void processQueue(com.mojang.blaze3d.vertex.PoseStack matrixStack, net.minecraft.client.renderer.MultiBufferSource consumers) {
+        // Fast path: most frames nothing is queued. Avoid iterator allocations + clearQueue bookkeeping.
+        if (BLOCKS.isEmpty() && POSITIONS.isEmpty() && ENTITIES.isEmpty()) {
+            return;
+        }
+
         for (BlockEntry entry : BLOCKS) {
-            SpecialRenderer.renderBlockHighlight(entry.pos, entry.color, worldContext);
+            SpecialRenderer.renderBlockHighlight(entry.pos(), entry.color(), matrixStack, consumers);
         }
         for (PositionEntry entry : POSITIONS) {
-            SpecialRenderer.renderPositionHighlight(entry.pos, entry.color, worldContext);
+            SpecialRenderer.renderPositionHighlight(entry.pos(), entry.color(), matrixStack, consumers);
         }
         for (EntityEntry entry : ENTITIES) {
-            SpecialRenderer.renderEntityHighlight(entry.entity, entry.color, worldContext);
+            SpecialRenderer.renderEntityHighlight(entry.entity(), entry.color(), matrixStack, consumers);
         //  SpecialRenderer.renderTracer(entry.entity, entry.color, worldContext);
         }
 
@@ -80,6 +90,18 @@ public class SpecialRendererQueue {
 
         public int size() {
             return internalQueue.size();
+        }
+
+        public boolean isEmpty() {
+            if (!internalQueue.isEmpty()) {
+                return false;
+            }
+            for (List<E> list : externalQueueList.values()) {
+                if (!list.isEmpty()) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public void addList(String key, List<E> list) {
@@ -124,7 +146,6 @@ public class SpecialRendererQueue {
         @Override
         @NotNull
         public Iterator<E> iterator() {
-            // :pain:
             return Iterables.concat(internalQueue, Iterables.concat(externalQueueList.values())).iterator();
         }
     }

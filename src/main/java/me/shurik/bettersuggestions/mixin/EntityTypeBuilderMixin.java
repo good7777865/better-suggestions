@@ -6,9 +6,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityType;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
 
 @Mixin(EntityType.Builder.class)
 public class EntityTypeBuilderMixin<T extends Entity> {
@@ -16,12 +16,12 @@ public class EntityTypeBuilderMixin<T extends Entity> {
     private EntityDimensions dimensions;
 
     @Shadow
-    private int maxTrackingRange;
-    
-    @Inject(at = @At("TAIL"), method = "maxTrackingRange")
-    public void maxTrackingRange(int maxTrackRange, CallbackInfoReturnable<EntityType.Builder<?>> info) {
+    private int clientTrackingRange;
+
+    @Inject(at = @At("TAIL"), method = "clientTrackingRange")
+    public void setTrackingRange(int maxTrackRange, CallbackInfoReturnable<EntityType.Builder<?>> info) {
         if (maxTrackRange == 0 && dimensions.width() == 0.0F && dimensions.height() == 0.0F) {
-            maxTrackingRange = 6;
+            clientTrackingRange = 6;
             dimensions = EntityDimensions.fixed(0.0F, 0.0F);
         }
     }

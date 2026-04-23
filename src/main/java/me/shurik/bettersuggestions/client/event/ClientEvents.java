@@ -1,35 +1,19 @@
 package me.shurik.bettersuggestions.client.event;
 
 import me.shurik.bettersuggestions.client.Client;
-import me.shurik.bettersuggestions.client.access.ClientEntityDataAccessor;
 import me.shurik.bettersuggestions.client.render.SpecialRendererQueue;
 import me.shurik.bettersuggestions.network.packet.ModPresenceBeaconPacket;
-import net.fabricmc.fabric.api.client.networking.v1.C2SPlayChannelEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+
 
 public class ClientEvents {
     public static void init() {
-        // Special cases for rendering highlighted entities
-        WorldRenderEvents.BEFORE_DEBUG_RENDER.register((worldrendercontext) -> {
-            if (Client.INSTANCE.world != null) {
-                SpecialRendererQueue.processQueue(worldrendercontext);
-            }
-//            SpecialRendererQueue.addBlock(new BlockPos(0,0,0));
-        });
-
-        // Clear entity highlight information after rendering
-        WorldRenderEvents.AFTER_ENTITIES.register((worldrendercontext) -> {
-            if (Client.INSTANCE.world != null) {
-                Client.INSTANCE.world.getEntities().forEach((entity) -> ((ClientEntityDataAccessor) entity).setHighlighted(false));
-            }
-        });
-
-        C2SPlayChannelEvents.REGISTER.register((handler, sender, client, channels) -> {
-            if (Client.SERVER_SIDE_PRESENT) return;
-
-            Client.SERVER_SIDE_PRESENT = channels.contains(ModPresenceBeaconPacket.ID.id());
-            if (Client.SERVER_SIDE_PRESENT) {
+        // Detect server-side mod presence by receiving the beacon packet
+        ClientPlayNetworking.registerGlobalReceiver(ModPresenceBeaconPacket.ID, (packet, context) -> {
+            if (!Client.SERVER_SIDE_PRESENT) {
+                Client.SERVER_SIDE_PRESENT = true;
                 Client.LOGGER.info("Detected mod installed on server");
             }
         });
@@ -39,7 +23,13 @@ public class ClientEvents {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             Client.SERVER_SIDE_PRESENT = false;
             SpecialRendererQueue.clearAll();
-            Client.storedChatCommand = null;
+            Client.clearHighlightedEntity();
         });
+
+        // Drive custom highlight rendering (coordinate highlights and marker/AEC fake highlights).
+        // Previously handled by WorldRenderEvents.LAST in 1.21.x; replaced by LevelRenderEvents in 26.1.2.
+        LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(context ->
+            SpecialRendererQueue.processQueue(context.poseStack(), context.bufferSource())
+        );
     }
 }

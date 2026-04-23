@@ -32,9 +32,6 @@ public class ConfigStore implements ConfigData {
     public boolean highlightCoordinates = true;
 
     @ConfigEntry.Gui.Tooltip(count = 2)
-    public boolean rememberCommandOnEscape = false;
-
-    @ConfigEntry.Gui.Tooltip(count = 2)
     public boolean addWhitespaceOnMouseCompletion = false;
 
     // Wish there was an option to make lists expanded by default :pensive:

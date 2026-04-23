@@ -1,6 +1,6 @@
 package me.shurik.bettersuggestions.client.access;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 public interface EntityRenderStateAccessor {
     void bettersuggestions$setSourceEntity(Entity entity);

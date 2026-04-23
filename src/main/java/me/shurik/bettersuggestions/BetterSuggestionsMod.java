@@ -4,7 +4,7 @@ import me.shurik.bettersuggestions.network.ServerPacketHandler;
 import me.shurik.bettersuggestions.suggestion.FunctionArgumentTypeSuggestions;
 import me.shurik.bettersuggestions.suggestion.ScoreHolderArgumentTypeSuggestions;
 import net.fabricmc.api.ModInitializer;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 public class BetterSuggestionsMod implements ModInitializer {
 	static {
@@ -23,6 +23,6 @@ public class BetterSuggestionsMod implements ModInitializer {
 	}
 
 	public static Identifier id(String path) {
-		return Identifier.of(ModConstants.MOD_ID, path);
+		return Identifier.fromNamespaceAndPath(ModConstants.MOD_ID, path);
 	}
 }

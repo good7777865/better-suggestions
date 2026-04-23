@@ -1,12 +1,12 @@
 package me.shurik.bettersuggestions.client.utils;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -16,9 +16,10 @@ import static me.shurik.bettersuggestions.client.Client.INSTANCE;
 @Environment(EnvType.CLIENT)
 public class ClientUtils {
     @Nullable
-    public static Entity getEntityByUUID(ClientWorld world, UUID uuid) {
-        for (Entity entity : world.getEntities()) {
-            if (entity.getUuid().equals(uuid)) {
+    public static Entity getEntityByUUID(ClientLevel world, UUID uuid) {
+        if (world == null) return null;
+        for (Entity entity : world.entitiesForRendering()) {
+            if (entity.getUUID().equals(uuid)) {
                 return entity;
             }
         }
@@ -27,23 +28,23 @@ public class ClientUtils {
 
     @Nullable
     public static Entity getEntityByUUID(String uuid) {
-        return getEntityByUUID(INSTANCE.world != null ? INSTANCE.world : null, UUID.fromString(uuid));
+        return getEntityByUUID(INSTANCE.level, UUID.fromString(uuid));
     }
 
-    public static boolean entityExists(ClientWorld world, int id) {
-        return world.getEntityById(id) != null;
+    public static boolean entityExists(ClientLevel world, int id) {
+        return world != null && world.getEntity(id) != null;
     }
 
     public static boolean entityExists(int id) {
-        return entityExists(INSTANCE.world != null ? INSTANCE.world : null, id);
+        return entityExists(INSTANCE.level, id);
     }
 
     @Nullable
     public static Entity getCrosshairTargetEntity() {
-        return INSTANCE.crosshairTarget != null && INSTANCE.crosshairTarget.getType() == HitResult.Type.ENTITY ? ((EntityHitResult) INSTANCE.crosshairTarget).getEntity() : null;
+        return INSTANCE.hitResult != null && INSTANCE.hitResult.getType() == HitResult.Type.ENTITY ? ((EntityHitResult) INSTANCE.hitResult).getEntity() : null;
     }
 
     public static boolean isKeyPressed(int key) {
-        return InputUtil.isKeyPressed(INSTANCE.getWindow(), key);
+        return InputConstants.isKeyDown(INSTANCE.getWindow(), key);
     }
 }

@@ -2,28 +2,28 @@ package me.shurik.bettersuggestions.network.packet;
 
 import me.shurik.bettersuggestions.BetterSuggestionsMod;
 import me.shurik.bettersuggestions.utils.ByteBufUtils;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 import java.util.Set;
 
-public record EntityCommandTagsResponseS2CPacket(int entityId, Set<String> commandTags) implements CustomPayload {
-    public static final PacketCodec<PacketByteBuf, EntityCommandTagsResponseS2CPacket> CODEC
-            = PacketCodec.of(EntityCommandTagsResponseS2CPacket::write, EntityCommandTagsResponseS2CPacket::new).cast();
-    public static final Id<EntityCommandTagsResponseS2CPacket> ID = new Id<>(BetterSuggestionsMod.id("entity_tags_response"));
+public record EntityCommandTagsResponseS2CPacket(int entityId, Set<String> commandTags) implements CustomPacketPayload {
+    public static final StreamCodec<RegistryFriendlyByteBuf, EntityCommandTagsResponseS2CPacket> CODEC
+            = StreamCodec.ofMember(EntityCommandTagsResponseS2CPacket::write, EntityCommandTagsResponseS2CPacket::new);
+    public static final Type<EntityCommandTagsResponseS2CPacket> ID = new Type<>(BetterSuggestionsMod.id("entity_tags_response"));
 
-    public EntityCommandTagsResponseS2CPacket(PacketByteBuf buf) {
-        this(buf.readInt(), ByteBufUtils.readSet(buf, PacketByteBuf::readString));
+    public EntityCommandTagsResponseS2CPacket(RegistryFriendlyByteBuf buf) {
+        this(buf.readInt(), ByteBufUtils.readSet(buf, RegistryFriendlyByteBuf::readUtf));
     }
 
-    private void write(PacketByteBuf buf) {
+    private void write(RegistryFriendlyByteBuf buf) {
         buf.writeInt(entityId);
-        ByteBufUtils.writeCollection(buf, commandTags, PacketByteBuf::writeString);
+        ByteBufUtils.writeCollection(buf, commandTags, RegistryFriendlyByteBuf::writeUtf);
     }
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

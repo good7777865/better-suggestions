@@ -13,10 +13,8 @@ public interface ClientEntityDataAccessor {
     @Nullable
     Set<String> getClientCommandTags();
     void setClientCommandTags(Set<String> clientCommandTags);
-    long getLastTagsUpdateTime();
     // Client scoreboard values
     @Nullable
     Set<ClientScoreboardValue> getClientScoreboardValues();
     void setClientScoreboardValues(Set<ClientScoreboardValue> clientScoreboardValues);
-    long getLastScoresUpdateTime();
 }

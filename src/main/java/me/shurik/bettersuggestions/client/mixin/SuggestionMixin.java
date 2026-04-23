@@ -11,14 +11,14 @@ import me.shurik.bettersuggestions.client.access.CustomSuggestionAccessor;
 import me.shurik.bettersuggestions.client.data.ClientScoreboardValue;
 import me.shurik.bettersuggestions.client.utils.ClientUtils;
 import me.shurik.bettersuggestions.utils.StringUtils;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.registry.Registries;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Uuids;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -45,7 +45,7 @@ public class SuggestionMixin implements CustomSuggestionAccessor {
     private boolean positionSuggestion = false;
 
     private Entity suggestions$entity;
-    private Vec3d suggestions$position = null;
+    private Vec3 suggestions$position = null;
     private BlockPos suggestions$blockPos = null;
 
     @Inject(at=@At("RETURN"), method="<init>(Lcom/mojang/brigadier/context/StringRange;Ljava/lang/String;Lcom/mojang/brigadier/Message;)V")
@@ -56,41 +56,33 @@ public class SuggestionMixin implements CustomSuggestionAccessor {
             entitySuggestion = true;
             suggestions$entity =  ClientUtils.getEntityByUUID(text);
         }
-//        else if (StringUtils.isBlockPos(text)) {
-//            blockPosSuggestion = true;
-//            suggestions$blockPos = StringUtils.parseBlockPos(text);
-//        }
-//        else if (StringUtils.isPosition(text)) {
-//            positionSuggestion = true;
-//            suggestions$position = StringUtils.parsePosition(text);
-//        }
     }
 
     public boolean isEntitySuggestion() { return entitySuggestion; }
     public boolean isPositionSuggestion() { return positionSuggestion; }
     public boolean isBlockPosSuggestion() { return blockPosSuggestion; }
 
-    public List<Text> getMultilineTooltip() {
-        List<Text> tooltip = Lists.newArrayList();
-        
+    public List<Component> getMultilineTooltip() {
+        List<Component> tooltip = Lists.newArrayList();
+
         if (entitySuggestion) {
-            Entity entity = getEntity();
+            Entity entity = better_suggestions$getEntity();
             if (entity != null) {
                 if (ModConstants.CONFIG.entitySuggestions.showEntityId) {
-                    tooltip.add(StringUtils.formatString(Registries.ENTITY_TYPE.getId(getEntity().getType()).toString(), Formatting.GREEN));
+                    tooltip.add(StringUtils.formatString(BuiltInRegistries.ENTITY_TYPE.getKey(better_suggestions$getEntity().getType()).toString(), ChatFormatting.GREEN));
                 }
 
                 if (ModConstants.CONFIG.entitySuggestions.showEntityUuid) {
-                    tooltip.add(Text.translatable("text.suggestion.tooltip.uuid.layout",
-                            StringUtils.formatTranslation("text.suggestion.tooltip.uuid", Formatting.AQUA),
-                            StringUtils.formatUuidAsIntArray(entity.getUuid())
+                    tooltip.add(Component.translatable("text.suggestion.tooltip.uuid.layout",
+                            StringUtils.formatTranslation("text.suggestion.tooltip.uuid", ChatFormatting.AQUA),
+                            StringUtils.formatUuidAsIntArray(entity.getUUID())
                     ));
                 }
 
                 if (ModConstants.CONFIG.entitySuggestions.showEntityPos) {
-                    tooltip.add(Text.translatable("text.suggestion.tooltip.pos.layout",
-                            StringUtils.formatTranslation("text.suggestion.tooltip.pos", Formatting.AQUA),
-                            StringUtils.formatPos(entity.getEntityPos())
+                    tooltip.add(Component.translatable("text.suggestion.tooltip.pos.layout",
+                            StringUtils.formatTranslation("text.suggestion.tooltip.pos", ChatFormatting.AQUA),
+                            StringUtils.formatPos(entity.position())
                     ));
                 }
 
@@ -99,46 +91,46 @@ public class SuggestionMixin implements CustomSuggestionAccessor {
                     Set<String> tags = ((ClientEntityDataAccessor) entity).getClientCommandTags();
                     // No info
                     if (tags == null) {
-                        tooltip.add(Text.translatable("text.suggestion.tooltip.entity_tags.loading").formatted(Formatting.GRAY));
+                        tooltip.add(Component.translatable("text.suggestion.tooltip.entity_tags.loading").withStyle(ChatFormatting.GRAY));
                     }
                     // Check if entity has any tags
                     else if (!tags.isEmpty()) {
-                        tooltip.add(Text.translatable("text.suggestion.tooltip.entity_tags.layout",
-                                StringUtils.formatTranslation("text.suggestion.tooltip.entity_tags", Formatting.AQUA),
-                                StringUtils.formatInt(tags.size(), Formatting.GOLD),
-                                StringUtils.formatStrings(tags, Formatting.GREEN)
+                        tooltip.add(Component.translatable("text.suggestion.tooltip.entity_tags.layout",
+                                StringUtils.formatTranslation("text.suggestion.tooltip.entity_tags", ChatFormatting.AQUA),
+                                StringUtils.formatInt(tags.size(), ChatFormatting.GOLD),
+                                StringUtils.formatStrings(tags, ChatFormatting.GREEN)
                         ));
                     }
                 }
 
                 if (ModConstants.CONFIG.entitySuggestions.showEntityVehicle && entity.getVehicle() != null) {
-                    tooltip.add(Text.translatable("text.suggestion.tooltip.vehicle.layout",
-                            StringUtils.formatTranslation("text.suggestion.tooltip.vehicle", Formatting.AQUA),
-                            StringUtils.formatString(entity.getVehicle().getName().getString(), Formatting.GREEN)
+                    tooltip.add(Component.translatable("text.suggestion.tooltip.vehicle.layout",
+                            StringUtils.formatTranslation("text.suggestion.tooltip.vehicle", ChatFormatting.AQUA),
+                            StringUtils.formatString(entity.getVehicle().getName().getString(), ChatFormatting.GREEN)
                     ));
                 }
 
-                if (ModConstants.CONFIG.entitySuggestions.showEntityPassengers && !entity.getPassengerList().isEmpty()) {
+                if (ModConstants.CONFIG.entitySuggestions.showEntityPassengers && !entity.getPassengers().isEmpty()) {
                     // Display number of passengers and their names
-                    tooltip.add(Text.translatable("text.suggestion.tooltip.passengers.layout",
-                            StringUtils.formatTranslation("text.suggestion.tooltip.passengers", Formatting.AQUA),
-                            StringUtils.formatInt(entity.getPassengerList().size(), Formatting.GOLD),
-                            StringUtils.joinTexts(entity.getPassengerList().stream().map(Entity::getName).toList())
+                    tooltip.add(Component.translatable("text.suggestion.tooltip.passengers.layout",
+                            StringUtils.formatTranslation("text.suggestion.tooltip.passengers", ChatFormatting.AQUA),
+                            StringUtils.formatInt(entity.getPassengers().size(), ChatFormatting.GOLD),
+                            StringUtils.joinTexts(entity.getPassengers().stream().map(Entity::getName).toList())
                     ));
                 }
 
-                if (ModConstants.CONFIG.entitySuggestions.showEntityTeam && entity.getScoreboardTeam() != null) {
-                    tooltip.add(Text.translatable("text.suggestion.tooltip.team.layout",
-                            StringUtils.formatTranslation("text.suggestion.tooltip.team", Formatting.AQUA),
-                            Text.literal(entity.getScoreboardTeam().getName()).styled(style -> style.withColor(entity.getScoreboardTeam().getColor()))
+                if (ModConstants.CONFIG.entitySuggestions.showEntityTeam && entity.getTeam() != null) {
+                    tooltip.add(Component.translatable("text.suggestion.tooltip.team.layout",
+                            StringUtils.formatTranslation("text.suggestion.tooltip.team", ChatFormatting.AQUA),
+                            Component.literal(entity.getTeam().getName()).withStyle(entity.getTeam().getColor())
                     ));
                 }
 
                 if (ModConstants.CONFIG.entitySuggestions.showEntityHealth && entity instanceof LivingEntity livingEntity) {
-                    tooltip.add(Text.translatable("text.suggestion.tooltip.health.layout",
-                            StringUtils.formatTranslation("text.suggestion.tooltip.health", Formatting.AQUA),
-                            StringUtils.formatFloat(livingEntity.getHealth(), Formatting.RED),
-                            StringUtils.formatFloat(livingEntity.getMaxHealth(), Formatting.RED)
+                    tooltip.add(Component.translatable("text.suggestion.tooltip.health.layout",
+                            StringUtils.formatTranslation("text.suggestion.tooltip.health", ChatFormatting.AQUA),
+                            StringUtils.formatFloat(livingEntity.getHealth(), ChatFormatting.RED),
+                            StringUtils.formatFloat(livingEntity.getMaxHealth(), ChatFormatting.RED)
                     ));
                 }
 
@@ -147,19 +139,19 @@ public class SuggestionMixin implements CustomSuggestionAccessor {
                     Set<ClientScoreboardValue> scoreboardValues = ((ClientEntityDataAccessor) entity).getClientScoreboardValues();
                     // No info & no server side
                     if (!Client.SERVER_SIDE_PRESENT) {
-                        tooltip.add(StringUtils.formatTranslation("text.suggestion.tooltip.entity_scores.no_server_side", Formatting.GRAY));
+                        tooltip.add(StringUtils.formatTranslation("text.suggestion.tooltip.entity_scores.no_server_side", ChatFormatting.GRAY));
                     }
                     else if (scoreboardValues == null) {
-                        tooltip.add(StringUtils.formatTranslation("text.suggestion.tooltip.entity_scores.loading", Formatting.GRAY));
+                        tooltip.add(StringUtils.formatTranslation("text.suggestion.tooltip.entity_scores.loading", ChatFormatting.GRAY));
                     }
                     // Check if entity has any scores
                     else if (!scoreboardValues.isEmpty()) {
-                        tooltip.add(Text.translatable("text.suggestion.tooltip.entity_scores.first_layout",
-                                StringUtils.formatTranslation("text.suggestion.tooltip.entity_scores", Formatting.AQUA)
+                        tooltip.add(Component.translatable("text.suggestion.tooltip.entity_scores.first_layout",
+                                StringUtils.formatTranslation("text.suggestion.tooltip.entity_scores", ChatFormatting.AQUA)
                         ));
-                        tooltip.addAll(scoreboardValues.stream().map(value -> Text.translatable("text.suggestion.tooltip.entity_scores.layout",
-                                StringUtils.formatString(value.objective(), Formatting.GRAY),
-                                StringUtils.formatInt(value.score(), Formatting.YELLOW)
+                        tooltip.addAll(scoreboardValues.stream().map(value -> Component.translatable("text.suggestion.tooltip.entity_scores.layout",
+                                StringUtils.formatString(value.objective(), ChatFormatting.GRAY),
+                                StringUtils.formatInt(value.score(), ChatFormatting.YELLOW)
                         )).toList());
                     }
                 }
@@ -171,14 +163,14 @@ public class SuggestionMixin implements CustomSuggestionAccessor {
         // Default tooltip (only shows up for non-entity suggestions or if entity doesn't exist)
         Message tooltipMessage = ((Suggestion) (Object) this).getTooltip();
         if (tooltipMessage != null) {
-            tooltip.add(Text.of(tooltipMessage.getString()));
+            tooltip.add(Component.literal(tooltipMessage.getString()));
         }
 
         return tooltip;
     }
 
     @Nullable
-    public Entity getEntity() {
+    public Entity better_suggestions$getEntity() {
         if (suggestions$entity == null || !ClientUtils.entityExists(suggestions$entity.getId())) {
             suggestions$entity = ClientUtils.getEntityByUUID(text);
         }
@@ -186,48 +178,18 @@ public class SuggestionMixin implements CustomSuggestionAccessor {
         return suggestions$entity;
     }
 
-    @Override
-    public Vec3d getPosition() {
-        if (positionSuggestion) {
-            return suggestions$position;
-        }
-
-        return null;
-    }
-
-    @Override
-    public BlockPos getBlockPos() {
-        if (blockPosSuggestion) {
-            return suggestions$blockPos;
-        }
-
-        return null;
-    }
-
-    public Text getFormattedText() {
+    public Component getFormattedText() {
         if (entitySuggestion) {
-            Entity entity = getEntity();
+            Entity entity = better_suggestions$getEntity();
             if (entity != null) {
-                return Text.translatable("%s (%s)", Text.literal(text), entity.getName());
+                return Component.translatable("%s (%s)", Component.literal(text), entity.getName());
             }
         }
-        
-        return Text.of(text);
+
+        return Component.literal(text);
     }
 
-    public String getTextWithEntityId() {
-        if (entitySuggestion) {
-            Entity entity = getEntity();
-            if (entity != null) {
-                int[] uuid = Uuids.toIntArray(UUID.fromString(text));
-                // uuid to string int array
-                return "[" + uuid[0] + " " + uuid[1] + " " + uuid[2] + " " + uuid[3] + "] (" + entity.getName().getString() + ")";
-            }
-        }
-        return text;
-    }
-
-    public String getOriginalText() {
+    public String better_suggestions$getOriginalText() {
         return text;
     }
 }

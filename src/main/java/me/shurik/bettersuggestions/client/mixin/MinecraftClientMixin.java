@@ -2,9 +2,9 @@ package me.shurik.bettersuggestions.client.mixin;
 
 import me.shurik.bettersuggestions.client.access.ClientEntityDataAccessor;
 import me.shurik.bettersuggestions.client.render.SpecialRendererQueue;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.entity.Entity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,10 +15,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Show outline for highlighted entities.
  * Clean up ChatInputSuggestor render queue when closing screen.
  */
-@Mixin(MinecraftClient.class)
+@Mixin(Minecraft.class)
 public abstract class MinecraftClientMixin {
-    @Inject(at = @At("HEAD"), method = "hasOutline", cancellable = true)
-    private void hasOutline(Entity entity, CallbackInfoReturnable<Boolean> info) {
+    @Inject(at = @At("HEAD"), method = "shouldEntityAppearGlowing", cancellable = true)
+    private void shouldEntityAppearGlowing(Entity entity, CallbackInfoReturnable<Boolean> info) {
         if (((ClientEntityDataAccessor) entity).isHighlighted()) {
             info.setReturnValue(true);
         }

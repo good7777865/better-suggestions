@@ -1,8 +1,8 @@
 package me.shurik.bettersuggestions.client.mixin;
 
-import net.minecraft.client.network.ClientCommandSource;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.multiplayer.ClientSuggestionProvider;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -16,12 +16,12 @@ import static me.shurik.bettersuggestions.client.Client.INSTANCE;
 /**
  * Suggest nearby entities in selectors.
  */
-@Mixin(ClientCommandSource.class)
+@Mixin(ClientSuggestionProvider.class)
 public class ClientCommandSourceMixin {
-    @Inject(at = @At("HEAD"), method = "getEntitySuggestions", cancellable = true)
+    @Inject(at = @At("HEAD"), method = "getSelectedEntities", cancellable = true)
     private void suggestNearbyEntities(CallbackInfoReturnable<Collection<String>> info) {
-        if (INSTANCE.world != null && INSTANCE.player != null) {
-            info.setReturnValue(INSTANCE.world.getOtherEntities(null, INSTANCE.player.getBoundingBox().expand(CONFIG.entitySuggestions.entitySuggestionRadius), (entity) -> !(entity instanceof PlayerEntity)).stream().map(Entity::getNameForScoreboard).toList());
+        if (INSTANCE.level != null && INSTANCE.player != null) {
+            info.setReturnValue(INSTANCE.level.getEntitiesOfClass(Entity.class, INSTANCE.player.getBoundingBox().inflate(CONFIG.entitySuggestions.entitySuggestionRadius), (entity) -> !(entity instanceof Player)).stream().map(Entity::getScoreboardName).toList());
         }
     }
 }

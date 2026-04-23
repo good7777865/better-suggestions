@@ -1,12 +1,11 @@
 package me.shurik.bettersuggestions.suggestion;
 
-import com.google.common.collect.Iterables;
 import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.Suggestions;
-import net.minecraft.command.CommandSource;
-import net.minecraft.command.EntitySelectorReader;
-import net.minecraft.command.argument.ScoreHolderArgumentType;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.ScoreHolderArgument;
+import net.minecraft.commands.arguments.selector.EntitySelectorParser;
 
 import java.util.Collection;
 
@@ -15,19 +14,23 @@ import java.util.Collection;
  */
 public class ScoreHolderArgumentTypeSuggestions {
     public static void init() {
-        ScoreHolderArgumentType.SUGGESTION_PROVIDER = (context, builder) -> {
+        // ScoreHolderArgument.SUGGEST_SCORE_HOLDERS is now final in 26.1.2
+        // TODO: use Mixin to override listSuggestions instead
+        if (true) return;
+        //noinspection UnreachableCode
+        var unusedDummy = (com.mojang.brigadier.suggestion.SuggestionProvider<net.minecraft.commands.CommandSourceStack>) (context, builder) -> {
             Object source = context.getSource();
-            if (source instanceof CommandSource commandSource) {
+            if (source instanceof SharedSuggestionProvider commandSource) {
                 StringReader reader = new StringReader(builder.getInput());
                 reader.setCursor(builder.getStart());
-                EntitySelectorReader entitySelectorReader = new EntitySelectorReader(reader, EntitySelectorReader.shouldAllowAtSelectors(commandSource));
+                EntitySelectorParser entitySelectorParser = new EntitySelectorParser(reader, EntitySelectorParser.allowSelectors(commandSource));
                 try {
-                    entitySelectorReader.read();
+                    entitySelectorParser.parse();
                 } catch (CommandSyntaxException e) {
                     // Invalid entity selector
                 }
 
-                return entitySelectorReader.listSuggestions(builder, (builderx) -> {
+                return entitySelectorParser.fillSuggestions(builder, (builderx) -> {
                     // I tried :(
                     // try {
                     //     // Suggest score holder names
@@ -38,9 +41,9 @@ public class ScoreHolderArgumentTypeSuggestions {
                     // } catch (CommandSyntaxException e) {
                     //     // No objective specified
                     // }
-                    Collection<String> collection = commandSource.getPlayerNames();
-                    Iterable<String> iterable = Iterables.concat(collection, commandSource.getEntitySuggestions());
-                    CommandSource.suggestMatching(iterable, builderx);
+                    Collection<String> collection = commandSource.getOnlinePlayerNames();
+                    Iterable<String> iterable = com.google.common.collect.Iterables.concat(collection, commandSource.getSelectedEntities());
+                    SharedSuggestionProvider.suggest(iterable, builderx);
                 });
             } else {
                 return Suggestions.empty();

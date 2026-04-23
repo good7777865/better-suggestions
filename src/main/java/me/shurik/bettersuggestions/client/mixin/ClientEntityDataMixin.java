@@ -4,7 +4,7 @@ import me.shurik.bettersuggestions.client.Client;
 import me.shurik.bettersuggestions.client.access.ClientEntityDataAccessor;
 import me.shurik.bettersuggestions.client.data.ClientDataGetter;
 import me.shurik.bettersuggestions.client.data.ClientScoreboardValue;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -25,7 +25,7 @@ public class ClientEntityDataMixin implements ClientEntityDataAccessor {
     public Set<String> getClientCommandTags() {
         if (System.currentTimeMillis() - suggestions$lastTagsUpdateTime > Client.POLLING_INTERVAL) {
             ClientDataGetter.requestEntityTags((Entity) (Object) this);
-            // Don't request tags [insert FPS here] times per second
+            // Don't request tags with frame times
             suggestions$lastTagsUpdateTime = System.currentTimeMillis();
         }
 
@@ -47,7 +47,7 @@ public class ClientEntityDataMixin implements ClientEntityDataAccessor {
     public Set<ClientScoreboardValue> getClientScoreboardValues() {
         if (System.currentTimeMillis() - suggestions$lastScoresUpdateTime > Client.POLLING_INTERVAL) {
             ClientDataGetter.requestEntityScores((Entity) (Object) this);
-            // Don't request tags [insert FPS here] times per second
+            // Don't request tags with frame times
             suggestions$lastScoresUpdateTime = System.currentTimeMillis();
         }
 
@@ -58,6 +58,6 @@ public class ClientEntityDataMixin implements ClientEntityDataAccessor {
         suggestions$clientScoreboardValues = clientScoreboardValues;
         suggestions$lastScoresUpdateTime = System.currentTimeMillis();
     }
-    
+
     public long getLastScoresUpdateTime() { return suggestions$lastScoresUpdateTime; }
 }

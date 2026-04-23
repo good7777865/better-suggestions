@@ -1,12 +1,10 @@
 package me.shurik.bettersuggestions.client.network;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 public class ClientNetworking {
-    public static void send(CustomPayload packet) {
+    public static void send(CustomPacketPayload packet) {
         ClientPlayNetworking.send(packet);
     }
 }

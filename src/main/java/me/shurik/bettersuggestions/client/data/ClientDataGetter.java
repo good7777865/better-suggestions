@@ -5,8 +5,8 @@ import me.shurik.bettersuggestions.ModConstants;
 import me.shurik.bettersuggestions.client.Client;
 import me.shurik.bettersuggestions.client.network.ClientPacketSender;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.entity.Entity;
-import net.minecraft.network.packet.c2s.play.RequestCommandCompletionsC2SPacket;
+import net.minecraft.network.protocol.game.ServerboundCommandSuggestionPacket;
+import net.minecraft.world.entity.Entity;
 
 import java.util.Set;
 
@@ -27,10 +27,10 @@ public class ClientDataGetter {
         if (Client.SERVER_SIDE_PRESENT) {
             ClientPacketSender.sendEntityCommandTagsRequest(entity);
         } else {
-            INSTANCE.getNetworkHandler().sendPacket(new RequestCommandCompletionsC2SPacket(-entity.getId() - 1_000_000_000, String.format("/tag %s remove ", entity.getUuidAsString())));
+            INSTANCE.getConnection().send(new ServerboundCommandSuggestionPacket(-entity.getId() - 1_000_000_000, String.format("/tag %s remove ", entity.getStringUUID())));
         }
         if (!pendingTagRequests.add(entity.getId()) && ModConstants.DEBUG) {
-            Client.LOGGER.warn("Tags for entity " + entity.getId() + " (" + entity.getType().getName().toString() + ") were requested more than once!");
+            Client.LOGGER.warn("Tags for entity {} ({}) were requested more than once!", entity.getId(), entity.getType().getDescription().getString());
         }
     }
 
@@ -39,7 +39,7 @@ public class ClientDataGetter {
             ClientPacketSender.sendEntityScoresRequest(entity);
         }
         if (!pendingScoreRequests.add(entity.getId()) && ModConstants.DEBUG) {
-            Client.LOGGER.warn("Scores for entity " + entity.getId() + " (" + entity.getType().getName().toString() + ") were requested more than once!");
+            Client.LOGGER.warn("Scores for entity {} ({}) were requested more than once!", entity.getId(), entity.getType().getDescription().getString());
         }
     }
 }

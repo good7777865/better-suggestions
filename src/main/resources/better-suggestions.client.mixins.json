@@ -1,13 +1,17 @@
 {
   "required": true,
   "package": "me.shurik.bettersuggestions.client.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_25",
   "client": [
+    "ArgumentCommandNodeAccessor",
     "ArgumentTypeMixin",
     "ChatInputSuggestorAccessorMixin",
     "ChatInputSuggestorMixin",
     "ChatScreenMixin",
     "ClientCommandSourceMixin",
+    "ClientPacketListenerCommandsMixin",
+    "EntityArgumentAccessor",
+    "ScoreHolderArgumentAccessor",
     "ClientPlayNetworkHandlerMixin",
     "EntityRendererMixin",
     "EntityRenderManagerMixin",
@@ -15,8 +19,7 @@
     "LanguageManagerMixin",
     "MinecraftClientMixin",
     "SuggestionMixin",
-    "SuggestionWindowMixin",
-    "TranslationStorageAccessorMixin"
+    "SuggestionWindowMixin"
   ],
   "injectors": {
     "defaultRequire": 1

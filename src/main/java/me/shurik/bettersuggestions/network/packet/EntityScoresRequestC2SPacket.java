@@ -1,25 +1,25 @@
 package me.shurik.bettersuggestions.network.packet;
 
 import me.shurik.bettersuggestions.BetterSuggestionsMod;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-public record EntityScoresRequestC2SPacket(int entityId) implements CustomPayload {
-    public static final PacketCodec<PacketByteBuf, EntityScoresRequestC2SPacket> CODEC
-            = PacketCodec.of(EntityScoresRequestC2SPacket::write, EntityScoresRequestC2SPacket::new).cast();
-    public static final Id<EntityScoresRequestC2SPacket> ID = new Id<>(BetterSuggestionsMod.id("entity_scores_request"));
+public record EntityScoresRequestC2SPacket(int entityId) implements CustomPacketPayload {
+    public static final StreamCodec<RegistryFriendlyByteBuf, EntityScoresRequestC2SPacket> CODEC
+            = StreamCodec.ofMember(EntityScoresRequestC2SPacket::write, EntityScoresRequestC2SPacket::new);
+    public static final Type<EntityScoresRequestC2SPacket> ID = new Type<>(BetterSuggestionsMod.id("entity_scores_request"));
 
-    public EntityScoresRequestC2SPacket(PacketByteBuf buf) {
+    public EntityScoresRequestC2SPacket(RegistryFriendlyByteBuf buf) {
         this(buf.readInt());
     }
 
-    private void write(PacketByteBuf buf) {
+    private void write(RegistryFriendlyByteBuf buf) {
         buf.writeInt(entityId);
     }
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

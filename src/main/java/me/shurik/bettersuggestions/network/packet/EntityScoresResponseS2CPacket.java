@@ -6,24 +6,24 @@ import me.shurik.bettersuggestions.utils.ByteBufUtils;
 import me.shurik.bettersuggestions.utils.Scoreboards;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public record EntityScoresResponseS2CPacket(int entityId, Collection<? extends Scoreboards.ScoreboardValue> scores) implements CustomPayload {
-    public static final PacketCodec<PacketByteBuf, EntityScoresResponseS2CPacket> CODEC
-            = PacketCodec.of(EntityScoresResponseS2CPacket::write, EntityScoresResponseS2CPacket::new).cast();
-    public static final Id<EntityScoresResponseS2CPacket> ID = new Id<>(BetterSuggestionsMod.id("entity_scores_response"));
+public record EntityScoresResponseS2CPacket(int entityId, Collection<? extends Scoreboards.ScoreboardValue> scores) implements CustomPacketPayload {
+    public static final StreamCodec<RegistryFriendlyByteBuf, EntityScoresResponseS2CPacket> CODEC
+            = StreamCodec.ofMember(EntityScoresResponseS2CPacket::write, EntityScoresResponseS2CPacket::new);
+    public static final Type<EntityScoresResponseS2CPacket> ID = new Type<>(BetterSuggestionsMod.id("entity_scores_response"));
 
-    public EntityScoresResponseS2CPacket(PacketByteBuf buf) {
+    public EntityScoresResponseS2CPacket(RegistryFriendlyByteBuf buf) {
         this(buf.readInt(), ByteBufUtils.readCollection(buf, ByteBufUtils::readScoreboardValue));
     }
 
-    private void write(PacketByteBuf buf) {
+    private void write(RegistryFriendlyByteBuf buf) {
         buf.writeInt(entityId);
         ByteBufUtils.writeCollection(buf, scores, ByteBufUtils::writeScoreboardValue);
     }
@@ -34,7 +34,7 @@ public record EntityScoresResponseS2CPacket(int entityId, Collection<? extends S
     }
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }
