@@ -20,4 +20,3 @@
 - JSON Text argument suggestions. (`/tellraw`, `/title`)
 - Configurable prioritized suggestions. (Applies to `/data`, `/tellraw` and `minecraft:barrier` by default)
 - Hide functions prefixed with `_`. (Disabled by default)
-- Remember command when closing chat using `Escape` key. (Disabled by default)
