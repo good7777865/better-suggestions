@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.tree.ArgumentCommandNode;
 import com.mojang.brigadier.tree.CommandNode;
+import me.shurik.bettersuggestions.client.ClientScoreHolderArgumentType;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ClientSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -34,12 +35,15 @@ import java.util.Deque;
  *
  * <p>For every {@link ArgumentCommandNode} whose type is either a player-only
  * {@link EntityArgument} or a {@link ScoreHolderArgument}, we swap {@link ArgumentCommandNode#getType()}
- * to {@code EntityArgument.entity()} / {@code EntityArgument.entities()} (matching singular vs.
- * plural) and clear {@code customSuggestions} to {@code null}, so Brigadier falls through to
- * {@code EntityArgument.listSuggestions} which is both:
+ * and clear {@code customSuggestions} to {@code null}:
  * <ul>
- *   <li>fully client-side (no server round-trip needed),</li>
- *   <li>non-players-only (so nearby entity UUIDs and {@code @e}/{@code @n} selectors show up).</li>
+ *   <li>{@link ScoreHolderArgument} → {@link me.shurik.bettersuggestions.client.ClientScoreHolderArgumentType}
+ *       (singular or plural). This wrapper delegates suggestions to {@code EntityArgument} so
+ *       nearby entity UUIDs and selectors appear, while its {@code parse} silently skips tokens
+ *       that are not valid selectors — covering fake-player names like {@code #var} or plain
+ *       strings — so the client never shows a spurious red syntax-error highlight.</li>
+ *   <li>Player-only {@link EntityArgument} → {@code playersOnly} field flipped to {@code false}
+ *       in-place, so selectors like {@code @e}/{@code @n} and entity UUIDs are suggested.</li>
  * </ul>
  *
  * <p>Server-side validity: we only change how the <em>client</em> parses/suggests. The typed
@@ -83,9 +87,13 @@ public abstract class ClientPacketListenerCommandsMixin {
 
     private static ArgumentType<?> bettersuggestions$entityReplacementFor(ArgumentType<?> type) {
         if (type instanceof ScoreHolderArgument sha) {
+            // Use ClientScoreHolderArgumentType instead of raw EntityArgument so that
+            // fake-player names (#var, myVariable, ...) don't trigger a client-side syntax error.
+            // The wrapper delegates suggestions to EntityArgument and silently skips tokens it
+            // cannot parse as selectors/UUIDs — the server re-parses the raw text anyway.
             return ((ScoreHolderArgumentAccessor) sha).bettersuggestions$getMultiple()
-                ? EntityArgument.entities()
-                : EntityArgument.entity();
+                ? ClientScoreHolderArgumentType.multiple()
+                : ClientScoreHolderArgumentType.single();
         }
         // EntityArgument is either already entity-mode (nothing to do) or player-only (swap to
         // the entity-mode equivalent of the same arity).
